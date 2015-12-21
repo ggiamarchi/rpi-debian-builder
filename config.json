@@ -1,0 +1,17 @@
+{
+    "partitions": {
+        "block_size": "1048576",
+        "disk_size": "1153433600",
+        "boot_size": "67108864"
+    },
+    "debian": {
+        "release": "wheezy",
+        "mirror": "http://archive.raspbian.org/raspbian",
+        "mirror_local": "http://localhost:3142/archive.raspbian.org/raspbian",
+        "hostname": "raspberry",
+        "root_password": "raspberry"
+    },
+    "output": {
+        "image_name": "rasp.img"
+    }
+}
