@@ -1,22 +1,124 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 rundir=$PWD
 
+
+###############################################################################
+### Utilities                                                               ###
+###############################################################################
+
+#
+# Generate a random file path in the workdir directory
+#
 tempfile() {
     echo "${workdir}/tmp_$(date +%Y%m%d%H%M%S)_${RANDOM}"
 }
 
+#
+# Read a value in the JSON configuration file
+#
+# $1 - key in the json file
+#
 config() {
-    cat ${SCRIPT_DIR}/config.json | jq -r ".${1}"
+    cat ${config_file} | jq -r ".${1}"
 }
 
+#
+# Exec a command in the chroot context
+#
+# $@ - command to execute
+#
 chroot_exec() {
     LANG=C chroot ${rootfs} $@
 }
+
+#
+# Get the absolute file path from the relative one.
+#
+# $1 - Relative or even absolute filepath
+#
+get_absolute_path() {
+    if [ ! -e $1 ] ; then
+        exit_on_error "$1 does not exist"
+    fi
+    readlink -f $1
+}
+
+
+###############################################################################
+### Handle input CLI configuration                                          ###
+###############################################################################
+
+config_file=
+trace=false
+
+print_usage() {
+    echo "Usage: rpi-debian-builder [options] --config config.json"
+    echo ""
+    echo "Options:"
+    echo ""
+    echo "  -t --trace     Output debug traces on stderr"
+    echo "  -h --help      Print this help"
+    echo ""
+}
+
+#
+# $1 - Error message to display
+#
+exit_on_error() {
+    echo "Error... $1"
+    exit 1
+}
+
+#
+# $1 - flag name
+# $2 - flag value
+#
+check_cli_arg() {
+    if [ -z "$2" ] ; then
+        exit_on_error "Error... parameter $1 needs an argument"
+    fi
+}
+
+#
+# $1 - Variable name
+# $2 - Error message if missing
+#
+check_mandatory() {
+    if [ -z ${!1} ] ; then
+        exit_on_error "$2"
+    fi
+}
+
+while [ $# -ne 0 ] ; do
+    case $1 in
+        -c | --config)
+            check_cli_arg $1 $2 ; shift ; config_file=$1 ;;
+
+        -t | --trace)
+            trace=true ;;
+
+        -h | --help)
+            print_usage && exit 0 ;;
+
+        *)
+            echo "Error... Unknown option $1"
+            echo ""
+            print_usage
+            exit 1
+    esac
+    shift
+done
+
+check_mandatory config_file "--config flag is missing"
+config_file=$(get_absolute_path ${config_file})
+
+if [ "${trace}" == "true" ] ; then
+    set -x
+fi
 
 
 ###############################################################################
