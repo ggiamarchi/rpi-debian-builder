@@ -79,6 +79,7 @@ losetup -d ${device}
 kpartx -va ${image}
 
 # TODO don't hardcode device names, read kpartx output
+declare -A partition
 partition[boot]=/dev/mapper/loop0p1
 partition[root]=/dev/mapper/loop0p2
 
