@@ -201,7 +201,6 @@ apt-get -y install git-core binutils ca-certificates curl
 curl -L https://raw.githubusercontent.com/Hexxeh/rpi-update/master/rpi-update > /usr/bin/rpi-update
 chmod +x /usr/bin/rpi-update
 SKIP_BACKUP=1 rpi-update
-rm -f rpi-firmware
 EOF
 
 
