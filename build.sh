@@ -182,13 +182,7 @@ chroot_exec chpasswd <<EOF
 root:${root_password}
 EOF
 
-
-###############################################################################
-### Install packages                                                        ###
-###############################################################################
-
 chroot_exec apt-get update
-chroot_exec apt-get -y install openssh-server
 
 
 ###############################################################################
@@ -202,6 +196,15 @@ curl -L https://raw.githubusercontent.com/Hexxeh/rpi-update/master/rpi-update > 
 chmod +x /usr/bin/rpi-update
 SKIP_BACKUP=1 rpi-update
 EOF
+
+
+###############################################################################
+### Install packages                                                        ###
+###############################################################################
+
+while read package ; do
+    chroot_exec apt-get -y install ${package}
+done < <(config "debian.packages[]")
 
 
 ###############################################################################
