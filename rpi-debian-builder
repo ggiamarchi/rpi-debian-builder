@@ -125,7 +125,7 @@ fi
 ### Prepare temporary working directory                                     ###
 ###############################################################################
 
-workdir=/tmp/build
+workdir="/tmp/rpi-debian-builder_$(date +%Y%m%d%H%M%S)_${RANDOM}"
 rootfs="${workdir}/root"
 bootfs="${rootfs}/boot"
 rm -rf ${workdir}
