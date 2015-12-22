@@ -76,12 +76,14 @@ losetup -d ${device}
 ### Create a loop device for 'boot' and 'root' partitions                   ###
 ###############################################################################
 
-kpartx -va ${image}
+p=( $(kpartx -v -a ${image} | awk '{print $3}') )
 
-# TODO don't hardcode device names, read kpartx output
 declare -A partition
-partition[boot]=/dev/mapper/loop0p1
-partition[root]=/dev/mapper/loop0p2
+
+partition[boot]=/dev/mapper/${p[0]}
+partition[root]=/dev/mapper/${p[1]}
+
+unset p
 
 sleep 5
 
