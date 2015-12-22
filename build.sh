@@ -220,17 +220,14 @@ EOF
 
 chroot_exec apt-get clean
 
+
 ###############################################################################
 ### Umount filesystems and free device mapper and loop device               ###
 ###############################################################################
 
-cd ${rundir}
-
 sync
 
 sleep 5
-
-cd ..
 
 umount -l ${bootfs}
 
