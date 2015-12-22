@@ -348,7 +348,7 @@ umount -l ${rootfs}
 
 sleep 5
 
-kpartx -d ${image}
+kpartx -v -d ${image}
 
 sleep 5
 
