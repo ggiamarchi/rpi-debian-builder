@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 rundir=$PWD
@@ -56,9 +56,12 @@ config_file=
 trace=false
 
 print_usage() {
-    echo "Usage: rpi-debian-builder [options] --config config.json"
+    echo "Usage: rpi-debian-builder [options] --config <config.json> --modules <mod1,mod2>"
     echo ""
     echo "Options:"
+    echo ""
+    echo "  -c --config    The JSON configuration file"
+    echo "  -m --modules   The comma separated module list to use"
     echo ""
     echo "  -t --trace     Output debug traces on stderr"
     echo "  -h --help      Print this help"
@@ -98,6 +101,9 @@ while [ $# -ne 0 ] ; do
         -c | --config)
             check_cli_arg $1 $2 ; shift ; config_file=$1 ;;
 
+        -m | --modules)
+            check_cli_arg $1 $2 ; shift ; IFS=',' read -r -a modules <<< "$1" ;;
+
         -t | --trace)
             trace=true ;;
 
@@ -120,6 +126,34 @@ if [ "${trace}" == "true" ] ; then
     set -x
 fi
 
+
+###############################################################################
+### Looking for modules directories                                         ###
+###############################################################################
+
+modules_path=${SCRIPT_DIR}/modules
+
+IFS=':' read -r -a modules_path_list <<< "$modules_path"
+
+declare -A modules_dirs
+
+for module in "${modules[@]}" ; do
+    for p in "${modules_path_list[@]}" ; do
+        module_dir=$(get_absolute_path "${p}/${module}")
+        if [ -d ${module_dir} ] ; then
+            if [ -n "${modules_dirs[${module}]}" ] ; then
+                exit_on_error "Module \"${module}\" should not be declared twice"
+            fi
+            modules_dirs[${module}]=${module_dir}
+            break
+        fi
+    done
+    if [ -z "${modules_dirs[${module}]}" ] ; then
+        exit_on_error "Module \"${module}\" could not be found."
+    fi
+done
+
+echo "Modules definition is OK"
 
 ###############################################################################
 ### Prepare temporary working directory                                     ###
@@ -246,34 +280,66 @@ LANG=C chroot ${rootfs} /debootstrap/debootstrap --second-stage
 
 mount ${partition[boot]} ${bootfs}
 
+#******************************************************************************
+
+#
+# Runs all the modules for the specified phase
+#
+# $1 - Phase name
+#
+run_phase() {
+    phase=$1
+    for module in "${modules[@]}" ; do
+        p=${modules_dirs[${module}]}/${phase}
+
+        #
+        # Copy static files
+        #
+        if [ -d ${p}/files ] ; then
+            for relative_file in $(cd ${p}/files ; find -type f) ; do
+                file=$(get_absolute_path ${p}/files/${relative_file})
+                dest=${rootfs}/${relative_file}
+                mkdir -p $(echo ${dest} | sed -e "s#\(.*/\).*#\1#")
+                cp -f ${file} ${dest}
+            done
+        fi
+
+        #
+        # Render templates
+        #
+        if [ -d ${p}/templates ] ; then
+            for relative_tpl in $(cd ${p}/templates ; find -type f) ; do
+                tpl=$(get_absolute_path ${p}/templates/${relative_tpl})
+                dest=${rootfs}/${relative_tpl}
+                mkdir -p $(echo ${dest} | sed -e "s#\(.*/\).*#\1#")
+                mustache ${config_file} ${tpl} > ${dest}
+            done
+        fi
+
+        #
+        # Execute scripts
+        #
+        if [ -d ${p}/scripts ] ; then
+            for relative_script in $(cd ${p}/scripts ; find -type f) ; do
+                script=$(get_absolute_path ${p}/scripts/${relative_script})
+                if [ "${phase}" == "initialize" ] ; then
+                    bash < ${script}
+                else
+                    chroot_exec bash < ${script}
+                fi
+            done
+        fi
+    done
+}
+
+#******************************************************************************
+
 
 ###############################################################################
-### Write some configuration files                                          ###
+### Execute modules "initialize" phase                                      ###
 ###############################################################################
 
-cat > ${rootfs}/boot/cmdline.txt <<EOF
-dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait
-EOF
-
-cat > ${rootfs}/etc/apt/sources.list <<EOF
-deb ${deb_local_mirror} ${deb_release} main contrib non-free
-EOF
-
-cat > ${rootfs}/etc/fstab <<EOF
-proc            /proc           proc    defaults        0       0
-/dev/mmcblk0p1  /boot           vfat    defaults        0       0
-EOF
-
-echo $(config "debian.hostname") > ${rootfs}/etc/hostname
-
-cat > ${rootfs}/etc/network/interfaces <<EOF
-auto lo
-iface lo inet loopback
-
-auto eth0
-iface eth0 inet dhcp
-EOF
-
+run_phase initialize
 
 ###############################################################################
 ### Set root password                                                       ###
@@ -307,6 +373,20 @@ EOF
 while read package ; do
     chroot_exec apt-get -y install ${package}
 done < <(config "debian.packages[]")
+
+
+###############################################################################
+### Execute modules "provision" phase                                       ###
+###############################################################################
+
+run_phase provision
+
+
+###############################################################################
+### Execute modules "finish" phase                                          ###
+###############################################################################
+
+run_phase finish
 
 
 ###############################################################################
