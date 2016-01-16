@@ -401,6 +401,17 @@ chroot_exec apt-get clean
 
 
 ###############################################################################
+### Kill all qemu processes running in chroot if any                        ###
+###############################################################################
+
+set +e
+for p in $(ps aux | grep '[q]emu-arm-static' | awk '{print $2}') ; do
+    kill -9 $p
+done
+set -e
+
+
+###############################################################################
 ### Umount filesystems and free device mapper and loop device               ###
 ###############################################################################
 
