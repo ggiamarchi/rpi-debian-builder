@@ -47,6 +47,55 @@ get_absolute_path() {
     readlink -f $1
 }
 
+#
+# Runs all the modules for the specified phase
+#
+# $1 - Phase name
+#
+run_phase() {
+    phase=$1
+    for module in "${modules[@]}" ; do
+        p=${modules_dirs[${module}]}/${phase}
+
+        #
+        # Copy static files
+        #
+        if [ -d ${p}/files ] ; then
+            for relative_file in $(cd ${p}/files ; find -type f) ; do
+                file=$(get_absolute_path ${p}/files/${relative_file})
+                dest=${rootfs}/${relative_file}
+                mkdir -p $(echo ${dest} | sed -e "s#\(.*/\).*#\1#")
+                cp -f ${file} ${dest}
+            done
+        fi
+
+        #
+        # Render templates
+        #
+        if [ -d ${p}/templates ] ; then
+            for relative_tpl in $(cd ${p}/templates ; find -type f) ; do
+                tpl=$(get_absolute_path ${p}/templates/${relative_tpl})
+                dest=${rootfs}/${relative_tpl}
+                mkdir -p $(echo ${dest} | sed -e "s#\(.*/\).*#\1#")
+                mustache ${config_file} ${tpl} > ${dest}
+            done
+        fi
+
+        #
+        # Execute scripts
+        #
+        if [ -d ${p}/scripts ] ; then
+            for relative_script in $(cd ${p}/scripts ; find -type f) ; do
+                script=$(get_absolute_path ${p}/scripts/${relative_script})
+                if [ "${phase}" == "initialize" ] ; then
+                    bash < ${script}
+                else
+                    chroot_exec bash < ${script}
+                fi
+            done
+        fi
+    done
+}
 
 ###############################################################################
 ### Handle input CLI configuration                                          ###
@@ -279,60 +328,6 @@ LANG=C chroot ${rootfs} /debootstrap/debootstrap --second-stage
 ###############################################################################
 
 mount ${partition[boot]} ${bootfs}
-
-#******************************************************************************
-
-#
-# Runs all the modules for the specified phase
-#
-# $1 - Phase name
-#
-run_phase() {
-    phase=$1
-    for module in "${modules[@]}" ; do
-        p=${modules_dirs[${module}]}/${phase}
-
-        #
-        # Copy static files
-        #
-        if [ -d ${p}/files ] ; then
-            for relative_file in $(cd ${p}/files ; find -type f) ; do
-                file=$(get_absolute_path ${p}/files/${relative_file})
-                dest=${rootfs}/${relative_file}
-                mkdir -p $(echo ${dest} | sed -e "s#\(.*/\).*#\1#")
-                cp -f ${file} ${dest}
-            done
-        fi
-
-        #
-        # Render templates
-        #
-        if [ -d ${p}/templates ] ; then
-            for relative_tpl in $(cd ${p}/templates ; find -type f) ; do
-                tpl=$(get_absolute_path ${p}/templates/${relative_tpl})
-                dest=${rootfs}/${relative_tpl}
-                mkdir -p $(echo ${dest} | sed -e "s#\(.*/\).*#\1#")
-                mustache ${config_file} ${tpl} > ${dest}
-            done
-        fi
-
-        #
-        # Execute scripts
-        #
-        if [ -d ${p}/scripts ] ; then
-            for relative_script in $(cd ${p}/scripts ; find -type f) ; do
-                script=$(get_absolute_path ${p}/scripts/${relative_script})
-                if [ "${phase}" == "initialize" ] ; then
-                    bash < ${script}
-                else
-                    chroot_exec bash < ${script}
-                fi
-            done
-        fi
-    done
-}
-
-#******************************************************************************
 
 
 ###############################################################################
