@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 rundir=$PWD
@@ -42,7 +42,7 @@ chroot_exec() {
 #
 get_absolute_path() {
     if [ ! -e $1 ] ; then
-        exit_on_error "$1 does not exist"
+        return 0
     fi
     readlink -f $1
 }
@@ -102,6 +102,7 @@ run_phase() {
 ###############################################################################
 
 config_file=
+modules_path=
 trace=false
 
 print_usage() {
@@ -109,11 +110,12 @@ print_usage() {
     echo ""
     echo "Options:"
     echo ""
-    echo "  -c --config    The JSON configuration file"
-    echo "  -m --modules   The comma separated module list to use"
+    echo "  -c --config         The JSON configuration file"
+    echo "  -m --modules        The comma separated module list to use"
+    echo "  -p --modules-path   The comma separated module list to use"
     echo ""
-    echo "  -t --trace     Output debug traces on stderr"
-    echo "  -h --help      Print this help"
+    echo "  -t --trace          Output debug traces on stderr"
+    echo "  -h --help           Print this help"
     echo ""
 }
 
@@ -153,6 +155,9 @@ while [ $# -ne 0 ] ; do
         -m | --modules)
             check_cli_arg $1 $2 ; shift ; IFS=',' read -r -a modules <<< "$1" ;;
 
+        -p | --modules-path)
+            check_cli_arg $1 $2 ; shift ; modules_path=$1 ;;
+
         -t | --trace)
             trace=true ;;
 
@@ -171,6 +176,10 @@ done
 check_mandatory config_file "--config flag is missing"
 config_file=$(get_absolute_path ${config_file})
 
+if [ -z "${config_file}" ] ; then
+    exit_on_error "Configuration file not found"
+fi
+
 if [ "${trace}" == "true" ] ; then
     set -x
 fi
@@ -180,7 +189,8 @@ fi
 ### Looking for modules directories                                         ###
 ###############################################################################
 
-modules_path=${SCRIPT_DIR}/modules
+# Always include de built-in modules in module path
+modules_path="${SCRIPT_DIR}/modules:${modules_path}"
 
 IFS=':' read -r -a modules_path_list <<< "$modules_path"
 
@@ -189,7 +199,7 @@ declare -A modules_dirs
 for module in "${modules[@]}" ; do
     for p in "${modules_path_list[@]}" ; do
         module_dir=$(get_absolute_path "${p}/${module}")
-        if [ -d ${module_dir} ] ; then
+        if [ -d "${module_dir}" ] ; then
             if [ -n "${modules_dirs[${module}]}" ] ; then
                 exit_on_error "Module \"${module}\" should not be declared twice"
             fi
@@ -203,6 +213,7 @@ for module in "${modules[@]}" ; do
 done
 
 echo "Modules definition is OK"
+
 
 ###############################################################################
 ### Prepare temporary working directory                                     ###
