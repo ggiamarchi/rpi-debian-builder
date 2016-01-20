@@ -212,8 +212,6 @@ for module in "${modules[@]}" ; do
     fi
 done
 
-echo "Modules definition is OK"
-
 
 ###############################################################################
 ### Prepare temporary working directory                                     ###
