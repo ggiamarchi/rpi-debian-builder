@@ -85,7 +85,7 @@ run_phase() {
         # Execute scripts
         #
         if [ -d ${p}/scripts ] ; then
-            for relative_script in $(cd ${p}/scripts ; find -type f) ; do
+            for relative_script in $(cd ${p}/scripts ; ls -1) ; do
                 script=$(get_absolute_path ${p}/scripts/${relative_script})
                 if [ "${phase}" == "initialize" ] ; then
                     bash < ${script}
