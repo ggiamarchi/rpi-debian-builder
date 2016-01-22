@@ -112,7 +112,7 @@ print_usage() {
     echo ""
     echo "  -c --config         The JSON configuration file"
     echo "  -m --modules        The comma separated module list to use"
-    echo "  -p --modules-path   The comma separated module list to use"
+    echo "  -p --modules-path   The path to look for modules (PATH like syntax)"
     echo ""
     echo "  -t --trace          Output debug traces on stderr"
     echo "  -h --help           Print this help"
