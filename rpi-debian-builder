@@ -103,6 +103,7 @@ run_phase() {
 
 config_file=
 modules_path=
+from_image=
 trace=false
 
 print_usage() {
@@ -113,6 +114,7 @@ print_usage() {
     echo "  -c --config         The JSON configuration file"
     echo "  -m --modules        The comma separated module list to use"
     echo "  -p --modules-path   The path to look for modules (PATH like syntax)"
+    echo "  -f --from-image     Start from an existing image instead of creating a new one"
     echo ""
     echo "  -t --trace          Output debug traces on stderr"
     echo "  -h --help           Print this help"
@@ -157,6 +159,9 @@ while [ $# -ne 0 ] ; do
 
         -p | --modules-path)
             check_cli_arg $1 $2 ; shift ; modules_path=$1 ;;
+
+        -f | --from-image)
+            check_cli_arg $1 $2 ; shift ; from_image=$1 ;;
 
         -t | --trace)
             trace=true ;;
@@ -228,24 +233,28 @@ mkdir -p ${workdir}
 ### Create a virtual block device                                           ###
 ###############################################################################
 
-block_size=$(config partitions.block_size)
-disk_size=$(config partitions.disk_size)
-boot_size=$(config partitions.boot_size)
-
 image=${workdir}/rpi.img
 
-dd if=/dev/zero of=${image} bs=${block_size} count=$((${disk_size}/${block_size}))
+if [ -z "$from_image" ] ; then
+    block_size=$(config partitions.block_size)
+    disk_size=$(config partitions.disk_size)
+    boot_size=$(config partitions.boot_size)
+    dd if=/dev/zero of=${image} bs=${block_size} count=$((${disk_size}/${block_size}))
+else
+    cp $from_image $image
+fi
 
 
 ###############################################################################
 ### Create 'boot' and 'root' partitions                                     ###
 ###############################################################################
 
-device=$(losetup --find --show ${image})
+if [ -z "$from_image" ] ; then
+    device=$(losetup --find --show ${image})
 
-set +e
+    set +e
 
-fdisk ${device} << EOF
+    fdisk ${device} << EOF
 n
 p
 1
@@ -261,9 +270,10 @@ p
 w
 EOF
 
-set -e
+    set -e
 
-losetup -d ${device}
+    losetup -d ${device}
+fi
 
 
 ###############################################################################
@@ -286,9 +296,10 @@ sleep 5
 ### Create filesystems for 'boot' and 'root' partitions                     ###
 ###############################################################################
 
-mkfs.vfat ${partition[boot]}
-mkfs.ext4 ${partition[root]}
-
+if [ -z "$from_image" ] ; then
+    mkfs.vfat ${partition[boot]}
+    mkfs.ext4 ${partition[root]}
+fi
 
 ###############################################################################
 ### Mount 'root' partition                                                  ###
@@ -318,18 +329,22 @@ mount -o bind /dev/pts ${rootfs}/dev/pts
 ###############################################################################
 
 deb_release=$(config "debian.release")
-deb_mirror=$(config "debian.mirror")
 deb_local_mirror=$(config "debian.mirror_local")
 
-debootstrap --foreign --arch armhf ${deb_release} ${rootfs} ${deb_local_mirror}
+if [ -z "$from_image" ] ; then
+    debootstrap --foreign --arch armhf ${deb_release} ${rootfs} ${deb_local_mirror}
+fi
 
 
 ###############################################################################
 ### Debootstrap second stage using qemu                                     ###
 ###############################################################################
 
-cp /usr/bin/qemu-arm-static ${rootfs}/usr/bin/
-LANG=C chroot ${rootfs} /debootstrap/debootstrap --second-stage
+cp -f /usr/bin/qemu-arm-static ${rootfs}/usr/bin/
+
+if [ -z "$from_image" ] ; then
+    LANG=C chroot ${rootfs} /debootstrap/debootstrap --second-stage
+fi
 
 
 ###############################################################################
@@ -349,25 +364,28 @@ run_phase initialize
 ### Set root password                                                       ###
 ###############################################################################
 
-root_password=$(config "debian.root_password")
-chroot_exec chpasswd <<EOF
+if [ -z "$from_image" ] ; then
+    root_password=$(config "debian.root_password")
+    chroot_exec chpasswd <<EOF
 root:${root_password}
 EOF
 
-chroot_exec apt-get update
-
+    chroot_exec apt-get update
+fi
 
 ###############################################################################
 ### Install RaspberryPi firmware                                            ###
 ###############################################################################
 
-chroot_exec bash <<EOF
+if [ -z "$from_image" ] ; then
+    chroot_exec bash <<EOF
 set -ex
 apt-get -y install git-core binutils ca-certificates curl
 curl -L https://raw.githubusercontent.com/Hexxeh/rpi-update/master/rpi-update > /usr/bin/rpi-update
 chmod +x /usr/bin/rpi-update
 SKIP_BACKUP=1 rpi-update
 EOF
+fi
 
 
 ###############################################################################
