@@ -1,0 +1,31 @@
+sudo: required
+dist: trusty
+
+before_install:
+  - sudo bash -c 'echo "deb http://archive.ubuntu.com/ubuntu trusty main" > /etc/apt/sources.list'
+  - sudo bash -c 'echo "deb-src http://archive.ubuntu.com/ubuntu trusty main" >> /etc/apt/sources.list'
+  - sudo bash -c 'echo "deb http://archive.ubuntu.com/ubuntu trusty-updates main" >> /etc/apt/sources.list'
+  - sudo bash -c 'echo "deb-src http://archive.ubuntu.com/ubuntu trusty-updates main" >> /etc/apt/sources.list'
+  - sudo bash -c 'echo "deb http://archive.ubuntu.com/ubuntu trusty universe" >> /etc/apt/sources.list'
+  - sudo bash -c 'echo "deb-src http://archive.ubuntu.com/ubuntu trusty universe" >> /etc/apt/sources.list'
+  - sudo bash -c 'echo "deb http://archive.ubuntu.com/ubuntu trusty-updates universe" >> /etc/apt/sources.list'
+  - sudo bash -c 'echo "deb-src http://archive.ubuntu.com/ubuntu trusty-updates universe" >> /etc/apt/sources.list'
+  - sudo bash -c 'echo "deb http://security.ubuntu.com/ubuntu trusty-security main" >> /etc/apt/sources.list'
+  - sudo bash -c 'echo "deb-src http://security.ubuntu.com/ubuntu trusty-security main" >> /etc/apt/sources.list'
+  - sudo bash -c 'echo "deb http://security.ubuntu.com/ubuntu trusty-security universe" >> /etc/apt/sources.list'
+  - sudo bash -c 'echo "deb-src http://security.ubuntu.com/ubuntu trusty-security universe" >> /etc/apt/sources.list'
+  - sudo apt-get update
+
+install:
+  - sudo ./install.sh
+
+script:
+  - sudo ./rpi-debian-builder --config config.json --modules basic --trace
+
+deploy:
+  provider: releases
+  api_key:
+    secure: Uep/82b5/E1MdRmdWTBA+nVhhzWtqzXPWMzuwaycHngzwZfm2LA5THgnVwr+OsJhIa8xpnmM/VW4/4vFakulWT01rVEC6YB3Zic29OH3W0pzimzzbM7owR7EyGcqDzPhtj0NfpbMzKodmZD8stn/EcxYdvEIMQbGnFMWTkCtwpGjaFuCwhMWvQPpPl79pgi6+S64lwGS2O2GDCL0+wgwd4XNoLDAQtswpaZCXA6bHbeWGs7bkofCVShKywJycegkgBaKcteZNCoI5cLBVkYcvOgcDeL34ldq4ltrN3siaxJ+CHNBoyb/JaZ6rrSCKugoA9GTj8yNMv0F8Pa5ZTdXo7iD/rFNb6NtKk7Od0v79od+22H+MALQgSuYs0P/JI8wud3hpAQAQIzcfbUASwlmr+P/CnwZp9FRgrMyI7mKtO7B2VTaqgtxV0QVz/M2KQNvtDl285NjO+54SNfyfiBORbYN6EF3Az5sJj6fcjdkaI8VaqDo76/O4UB4xp0OVrIm9oF8QB4TakJl4CARCfYd781Mc63mxOatt804zyxi/7yOCEaVvUvUTdwVwmywzXJ8AaJbWs7eZEWDJFvE7oxgBvcUJwoiT7NJji9z56YsXxzPu/ZHW+2zl7+AeLNKw+nur3yGLLNVYte07CPdjYINfRSUEXOL9iagdW4TOuiBpzg=
+  file: raspberry-debian.img
+  on:
+    tags: true

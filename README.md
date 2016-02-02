@@ -1,5 +1,7 @@
 # RPi Debian Builder
 
+[![Build Status](https://travis-ci.org/ggiamarchi/rpi-debian-builder.svg?branch=master)](https://travis-ci.org/ggiamarchi/rpi-debian-builder)
+
 Build your custom Debian image for RaspberryPi easily.
 
 ## Requirements
