@@ -22,6 +22,9 @@ install:
 script:
   - sudo ./rpi-debian-builder --config config.json --modules basic --trace
 
+before_deploy:
+  - sudo chown travis:travis raspberry-debian.img
+
 deploy:
   provider: releases
   api_key:
