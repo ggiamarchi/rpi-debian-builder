@@ -1,21 +1,6 @@
 sudo: required
 dist: trusty
 
-before_install:
-  - sudo bash -c 'echo "deb http://archive.ubuntu.com/ubuntu trusty main" > /etc/apt/sources.list'
-  - sudo bash -c 'echo "deb-src http://archive.ubuntu.com/ubuntu trusty main" >> /etc/apt/sources.list'
-  - sudo bash -c 'echo "deb http://archive.ubuntu.com/ubuntu trusty-updates main" >> /etc/apt/sources.list'
-  - sudo bash -c 'echo "deb-src http://archive.ubuntu.com/ubuntu trusty-updates main" >> /etc/apt/sources.list'
-  - sudo bash -c 'echo "deb http://archive.ubuntu.com/ubuntu trusty universe" >> /etc/apt/sources.list'
-  - sudo bash -c 'echo "deb-src http://archive.ubuntu.com/ubuntu trusty universe" >> /etc/apt/sources.list'
-  - sudo bash -c 'echo "deb http://archive.ubuntu.com/ubuntu trusty-updates universe" >> /etc/apt/sources.list'
-  - sudo bash -c 'echo "deb-src http://archive.ubuntu.com/ubuntu trusty-updates universe" >> /etc/apt/sources.list'
-  - sudo bash -c 'echo "deb http://security.ubuntu.com/ubuntu trusty-security main" >> /etc/apt/sources.list'
-  - sudo bash -c 'echo "deb-src http://security.ubuntu.com/ubuntu trusty-security main" >> /etc/apt/sources.list'
-  - sudo bash -c 'echo "deb http://security.ubuntu.com/ubuntu trusty-security universe" >> /etc/apt/sources.list'
-  - sudo bash -c 'echo "deb-src http://security.ubuntu.com/ubuntu trusty-security universe" >> /etc/apt/sources.list'
-  - sudo apt-get update
-
 install:
   - sudo ./install.sh
 
