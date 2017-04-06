@@ -2,7 +2,7 @@ sudo: required
 dist: trusty
 
 install:
-  - sudo ./install.sh
+  - ./install.sh
 
 script:
   - sudo ./rpi-debian-builder --config config.json --modules basic --trace

@@ -2,9 +2,9 @@
 
 set -ex
 
-curl -sSL https://deb.nodesource.com/setup | bash
+curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash -
 
-apt-get install -y binfmt-support qemu qemu-user-static lvm2 kpartx \
-                   debootstrap dosfstools apt-cacher-ng jq nodejs
+sudo apt-get install -y binfmt-support qemu qemu-user-static lvm2 kpartx \
+                   debootstrap dosfstools apt-cacher-ng jq nodejs build-essential
 
-npm install -g mustache
+sudo npm install -g mustache
