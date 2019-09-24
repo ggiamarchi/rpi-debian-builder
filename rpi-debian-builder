@@ -361,17 +361,21 @@ mount ${partition[boot]} ${bootfs}
 run_phase initialize
 
 ###############################################################################
-### Set root password                                                       ###
+### Create sudoer user                                                      ###
 ###############################################################################
 
 if [ -z "$from_image" ] ; then
-    root_password=$(config "debian.root_password")
-    chroot_exec chpasswd <<EOF
-root:${root_password}
-EOF
-
-    chroot_exec apt-get update
+    chroot_exec apt update
+    chroot_exec apt install -y sudo
 fi
+
+chroot_exec useradd -m -d /home/linux -s /bin/bash linux
+chroot_exec chpasswd <<- EOF
+	linux:linux
+	EOF
+
+mkdir -p ${rootfs}/etc/sudoers.d
+echo "linux ALL=(ALL:ALL) NOPASSWD: ALL" > ${rootfs}/etc/sudoers.d/linux
 
 ###############################################################################
 ### Install RaspberryPi firmware                                            ###
