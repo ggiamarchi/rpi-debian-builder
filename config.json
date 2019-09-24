@@ -5,11 +5,10 @@
         "boot_size": "67108864"
     },
     "debian": {
-        "release": "wheezy",
+        "release": "jessie",
         "mirror": "http://archive.raspbian.org/raspbian",
         "mirror_local": "http://localhost:3142/archive.raspbian.org/raspbian",
         "hostname": "raspberry",
-        "root_password": "raspberry",
         "packages": [
             "openssh-server"
         ]
